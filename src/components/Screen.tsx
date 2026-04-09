@@ -1,32 +1,26 @@
-import React from 'react';
-import { StyleSheet, SafeAreaView, View, ViewStyle, Platform, StatusBar } from 'react-native';
+import type { PropsWithChildren } from 'react';
 
-interface ScreenProps {
-  children: React.ReactNode; // This fixes the "Property children does not exist" error
-  style?: ViewStyle;
-}
+import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
-const Screen: React.FC<ScreenProps> = ({ children, style }) => {
+import { useTheme } from '../theme/ThemeProvider';
+
+type ScreenProps = PropsWithChildren<{
+  style?: StyleProp<ViewStyle>;
+  edges?: Edge[];
+}>;
+
+export function Screen({ children, style, edges = ['top', 'left', 'right'] }: ScreenProps) {
+  const { colors } = useTheme();
   return (
-    <SafeAreaView style={[styles.screen, style]}>
-      {/* View is often needed inside SafeAreaView for consistent padding */}
-      <View style={[styles.container, style]}>
-        {children}
-      </View>               
+    <SafeAreaView edges={edges} style={[styles.container, { backgroundColor: colors.background }, style]}>
+      {children}
     </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: '#F9FBF2', // Your main theme cream color
-    // Prevents content from going under the status bar on Android
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-  },
   container: {
     flex: 1,
   },
 });
-
-export default Screen;
