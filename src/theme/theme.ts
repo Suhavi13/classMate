@@ -1,40 +1,44 @@
-export const Colors = {
-  // Primary Purples
-  primary: '#702D91',      
-  secondary: '#B886CD',   
-  accent: '#4B0082',       
-  muted: '#C4A6D1',        
+export type ThemeColors = {
+  background: string;
+  surface: string;
+  card: string;
+  border: string;
+  text: string;
+  muted: string;
+  purple: string;
+  lavender: string;
+  lavenderDeep: string;
+  white: string;
+  black: string;
+  danger: string;
+};
 
-  bgMain: '#F9FBF2',       
-  bgCardTask: '#F3E8FF',   
-  bgInput: '#FFFFFF',      
-  divider: '#E0E0E0',      
-  placeholder: '#C4A6D1',  
+export const lightTheme: ThemeColors = {
+  background: '#F7F6EE',
+  surface: '#F6EEFF',
+  card: '#DADCD6',
+  border: '#2A2A2A',
+  text: '#1A1A2A',
+  muted: '#6A6A6A',
+  purple: '#6B1FB4',
+  lavender: '#D7C4EA',
+  lavenderDeep: '#CDB4E6',
+  white: '#FFFFFF',
+  black: '#111111',
+  danger: '#E04444',
+};
+
+export const darkTheme: ThemeColors = {
+  background: '#0F0F13',
+  surface: '#151521',
+  card: '#1E1E2A',
+  border: '#3A3A4A',
+  text: '#F2F2F7',
+  muted: '#B0B0B8',
+  purple: '#C9A3FF',
+  lavender: '#2B2040',
+  lavenderDeep: '#3B2B5A',
   white: '#FFFFFF',
   black: '#000000',
-};
-
-export const Spacing = {
-  xs: 4,
-  sm: 8,
-  md: 16,
-  lg: 24,
-  xl: 32,
-  radiusCard: 45,
-  radiusInput: 12,
-};
-
-export const Typography = {
-  header: {
-    fontSize: 32,
-    fontWeight: 'bold' as const,
-  },
-  body: {
-    fontSize: 16,
-    fontWeight: 'normal' as const,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '700' as const,
-  },
+  danger: '#FF6B6B',
 };
