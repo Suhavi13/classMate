@@ -1,153 +1,212 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { ChevronLeft, Home, BarChart2, LayoutGrid } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
-import Screen from '../components/Screen';
-import {Calendar} from 'react-native-calendars';
+// Calendar view that shows tasks for the selected date.
 
-export default function CalendarScreen() {
-  const router = useRouter();
-  
-  const [selected, setSelected] = useState('2026-04-08');
+import { Ionicons } from '@expo/vector-icons';
+import { useMemo, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-  const tasks = [
-    { id: '1', title: 'Do maths assignment' },
-    { id: '2', title: 'Buy gift for next week' },
-    { id: '3', title: 'Meal prep + groceries' },
-    { id: '4', title: 'OOP lab submission' },
-  ];
+import { MonthYearDropdown } from '../components/MonthYearDropdown';
+import { Screen } from '../components/Screen';
+import { useAppState } from '../store/AppStateProvider';
+import { useTheme } from '../theme/ThemeProvider';
+import { startOfMonth, toISODate } from '../utils/dates';
+import type { CalendarStackParamList } from '../navigation/types';
+
+type Props = NativeStackScreenProps<CalendarStackParamList, 'Calendar'>;
+
+function buildMonthGrid(month: Date) {
+  const start = new Date(month.getFullYear(), month.getMonth(), 1);
+  const startWeekday = (start.getDay() + 6) % 7; // 0=Mon ... 6=Sun
+  const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+
+  const cells: Array<{ day: number | null; iso: string | null }> = [];
+  for (let i = 0; i < startWeekday; i += 1) cells.push({ day: null, iso: null });
+  for (let d = 1; d <= daysInMonth; d += 1) {
+    const iso = toISODate(new Date(month.getFullYear(), month.getMonth(), d));
+    cells.push({ day: d, iso });
+  }
+  while (cells.length % 7 !== 0) cells.push({ day: null, iso: null });
+  return cells;
+}
+
+export function CalendarScreen({ navigation }: Props) {
+  const { state, actions } = useAppState();
+  const { colors } = useTheme();
+  const [month, setMonth] = useState(() => startOfMonth(new Date())); // current month default
+  const [selectedISO, setSelectedISO] = useState(() => toISODate(new Date())); // current date default
+  const goHome = () => {
+    const tabNav = navigation.getParent()?.getParent();
+    (tabNav as any)?.navigate?.('HomeStack');
+  };
+
+  const cells = useMemo(() => buildMonthGrid(month), [month]);
+  const tasksForSelected = useMemo(() => {
+    return state.tasks
+      .filter((t) => t.dateISO === selectedISO)
+      .sort((a, b) => Number(a.completed) - Number(b.completed));
+  }, [state.tasks, selectedISO]);
 
   return (
-    <Screen style={styles.container}>
-      {/* --- HEADER --- */}
+    <Screen style={styles.screen} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <ChevronLeft color="#702D91" size={28} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Calendar</Text>
-        <View style={{ width: 28 }} />
+        <Pressable
+          accessibilityRole="button"
+          onPress={() =>
+            navigation.canGoBack() ? navigation.goBack() : goHome()
+          }
+          style={styles.backBtn}
+        >
+          <Ionicons name="chevron-back" size={26} color={colors.purple} />
+        </Pressable>
+        <Text style={[styles.title, { color: colors.purple }]}>Calendar</Text>
+        <View style={{ width: 44 }} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* --- CALENDAR CARD --- */}
-        <View style={styles.calendarCard}>
-          <Calendar
-            // Initial view
-            current={'2026-04-08'}
-            
-            // This handles the tap (replaces click/hover)
-            onDayPress={(day: any) => {
-              setSelected(day.dateString);
-              console.log('Selected:', day.dateString);
-            }}
+      <View style={[styles.outerCard, { borderColor: colors.purple, backgroundColor: colors.lavender }]}>
+        <MonthYearDropdown value={month} onChange={setMonth} minYear={2016} maxYear={2032} />
 
-            // This visualizes the selection
-            markedDates={{
-              [selected]: { 
-                selected: true, 
-                disableTouchEvent: true, 
-                selectedColor: '#702D91', 
-                selectedTextColor: 'white' 
-              },
-              '2026-04-15': { marked: true, dotColor: '#B886CD' },
-            }}
-            
-            theme={{
-              backgroundColor: 'transparent',
-              calendarBackground: 'transparent',
-              textSectionTitleColor: '#702D91',
-              selectedDayBackgroundColor: '#702D91',
-              selectedDayTextColor: '#ffffff',
-              todayTextColor: '#B886CD',
-              dayTextColor: '#4B0082',
-              monthTextColor: '#4B0082',
-              textMonthFontWeight: 'bold',
-              textMonthFontSize: 20,
-              arrowColor: '#702D91',
-              textDayFontWeight: '500',
-              textDayHeaderFontWeight: 'bold',
-            }}
-          />
-        </View>
-
-        {/* --- TASKS SECTION --- */}
-        <View style={styles.taskCard}>
-          <Text style={styles.taskTitle}>Todays Tasks</Text>
-          {tasks.map((item, index) => (
-            <View 
-              key={item.id} 
-              style={[
-                styles.taskItem, 
-                index === tasks.length - 1 && { borderBottomWidth: 0 }
-              ]}
-            >
-              <Text style={styles.taskText}>{item.title}</Text>
-            </View>
+        <View style={styles.weekRow}>
+          {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map((w) => (
+            <Text key={w} style={[styles.weekLabel, { color: colors.muted }]}>
+              {w}
+            </Text>
           ))}
         </View>
-      </ScrollView>
 
-      {/* --- BOTTOM NAVIGATION --- */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity onPress={() => router.push('/')}>
-          <Home color="#4B0082" size={26} />
-        </TouchableOpacity>
-        <BarChart2 color="#4B0082" size={26} />
-        <LayoutGrid color="#4B0082" size={26} />
+        <View style={styles.grid}>
+          {cells.map((c, idx) => {
+            const selected = c.iso === selectedISO;
+            return (
+              <Pressable
+                key={idx}
+                disabled={!c.iso}
+                onPress={() => c.iso && setSelectedISO(c.iso)}
+                style={[styles.cell, selected && { backgroundColor: colors.purple }]}
+              >
+                <Text style={[styles.cellText, { color: colors.text }, selected && { color: colors.white }]}>
+                  {c.day ?? ''}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
+      <View style={{ height: 14 }} />
+
+      <View style={[styles.tasksCard, { backgroundColor: colors.lavender }]}>
+        <Text style={[styles.tasksTitle, { color: colors.purple }]}>Todays Tasks</Text>
+        <View style={styles.tasksList}>
+          {tasksForSelected.length === 0 ? (
+            <Text style={[styles.empty, { color: colors.muted }]}>No tasks for this day.</Text>
+          ) : (
+            tasksForSelected.map((t, idx) => (
+              <Pressable
+                key={t.id}
+                accessibilityRole="button"
+                onPress={() => actions.toggleTaskCompleted(t.id)}
+                style={[styles.taskRow, idx < tasksForSelected.length - 1 && styles.taskRowBorder]}
+              >
+                <Text
+                  style={[
+                    styles.taskText,
+                    { color: colors.text },
+                    t.completed && { textDecorationLine: 'line-through', color: colors.muted },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {t.name}
+                </Text>
+              </Pressable>
+            ))
+          )}
+        </View>
       </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FBF2' },
+  screen: {
+    paddingHorizontal: 14,
+    paddingTop: 6,
+  },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
+    justifyContent: 'space-between',
+    marginBottom: 8,
   },
-  headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#702D91' },
-  calendarCard: {
-    backgroundColor: '#D6B4E5', 
-    marginHorizontal: 15,
-    borderRadius: 35,
-    padding: 10,
+  backBtn: {
+    width: 44,
+    height: 36,
+    justifyContent: 'center',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '900',
+  },
+  outerCard: {
     borderWidth: 2,
-    borderColor: '#702D91',
+    borderRadius: 28,
+    padding: 14,
+  },
+  weekRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 2,
+    marginBottom: 6,
+  },
+  weekLabel: {
+    width: 36,
+    textAlign: 'center',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: 6,
+  },
+  cell: {
+    width: 36,
+    height: 32,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cellText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  tasksCard: {
+    borderRadius: 16,
+    padding: 12,
+  },
+  tasksTitle: {
+    fontSize: 14,
+    fontWeight: '900',
+    marginBottom: 8,
+  },
+  tasksList: {
+    borderRadius: 12,
     overflow: 'hidden',
   },
-  taskCard: {
-    backgroundColor: '#E5D1F0',
-    marginHorizontal: 15,
-    marginTop: 20,
-    borderRadius: 25,
-    padding: 20,
-    marginBottom: 100,                                      
+  taskRow: {
+    paddingVertical: 10,
+    paddingHorizontal: 10,
   },
-  taskTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#702D91',
-    marginBottom: 10,
-  },
-  taskItem: {
-    paddingVertical: 12,
+  taskRowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: '#C4A6D1',
+    borderBottomColor: '#C9B3E0',
   },
-  taskText: { color: '#4B0082', fontSize: 15, fontWeight: '500' },
-  bottomNav: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 20,
-    backgroundColor: '#C4A6D1',
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+  taskText: {
+    fontSize: 12,
+  },
+  empty: {
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    fontSize: 12,
   },
 });
