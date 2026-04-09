@@ -21,23 +21,13 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-<<<<<<< HEAD
       "predictiveBackGestureEnabled": false
-=======
-      "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.mobile_app_project"
->>>>>>> zaara
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-<<<<<<< HEAD
       "@react-native-community/datetimepicker"
-=======
-      "@react-native-community/datetimepicker",
-      "expo-router"
->>>>>>> zaara
     ]
   }
 }
